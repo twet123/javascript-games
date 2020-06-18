@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Pong</title>
+        <canvas id="platno" width="1200" height="600"></canvas>
+        <script type="text/javascript">
+            var canvas = document.getElementById('platno');
+
+            if(canvas.getContext)
+                var context = canvas.getContext('2d');
+
+            var ballDirection = Math.floor(Math.random() * 2);
+
+            const reketLevi = {
+                width : 15,
+                height : 100,
+                x : 0,
+                y : (canvas.height - 100) / 2,
+                color : "#000000"
+            }
+
+            const reketDesni = {
+                width : 15,
+                height : 100,
+                x : canvas.width - 15,
+                y : (canvas.height - 100) / 2,
+                color : "#000000"
+            }
+
+            const mreza = {
+                width : 3,
+                height : canvas.height,
+                x : (canvas.width - 3) / 2,
+                y : 0,
+                color : "#000000"
+            }
+
+            const lopta = {
+                radius : 10,
+                x : canvas.width / 2,
+                y : canvas.height / 2,
+                dx : 6,
+                dy : 4,
+                color : "#205419"
+            }
+
+            function drawRect(x, y, w, h, color) {
+                context.fillStyle = color;
+                context.fillRect(x, y, w, h);
+            }
+
+            function drawMreza() {
+                context.fillStyle = mreza.color;
+                for(var i = 0; i <= mreza.height - 40; i+=40)
+                {
+                    context.fillRect(mreza.x, mreza.y + i, mreza.width, 20);
+                }
+            }
+
+            function drawLopta() {
+                context.beginPath();
+                context.arc(lopta.x, lopta.y, lopta.radius, 0, 2*Math.PI);
+                context.fillStyle = lopta.color;
+                context.fill();
+                context.stroke();
+            }
+
+            var upPressed = false, downPressed = false, wPressed = false, sPressed = false;
+
+            var pointsLevi = 0, pointsDesni = 0;
+
+            var cnt = 0;
+
+            var pauseInterval;
+
+            document.addEventListener("keydown", keyDownHandler, false);
+            document.addEventListener("keyup", keyUpHandler, false);
+
+            function keyDownHandler(event) {
+                if(event.key == "ArrowUp")
+                    upPressed = true;
+                else if(event.key == "ArrowDown")
+                    downPressed = true;
+                else if(event.key == "w" || event.key == "W")
+                    wPressed = true;
+                else if(event.key == "s" || event.key == "S")
+                    sPressed = true;
+            }
+
+            function keyUpHandler(event) {
+                if(event.key == "ArrowUp")
+                    upPressed = false;
+                else if(event.key == "ArrowDown")
+                    downPressed = false;
+                else if(event.key == "w" || event.key == "W")
+                    wPressed = false;
+                else if(event.key == "s" || event.key == "S")
+                    sPressed = false;
+            }
+
+            function drawPoeni() {
+                context.font = "30px Arial";
+                context.fillText(pointsLevi.toString(), canvas.width/2 - 70, 30);
+                context.fillText(pointsDesni.toString(), canvas.width/2 + 30, 30)
+            }
+
+            function draw() {
+                drawRect(reketLevi.x, reketLevi.y, reketLevi.width, reketLevi.height, reketLevi.color);
+                drawRect(reketDesni.x, reketDesni.y, reketDesni.width, reketDesni.height, reketDesni.color);
+                drawLopta();
+                drawMreza();
+                drawPoeni();
+            }
+
+            function moveBall() {
+                if(lopta.y + lopta.radius > canvas.height || lopta.y - lopta.radius < 0)
+                {
+                    //lopta.dx = -lopta.dx;
+                    lopta.dy = -lopta.dy;
+                }
+
+                if( 
+                    (lopta.y - lopta.radius > reketLevi.y) && 
+                    (lopta.y + lopta.radius < reketLevi.y + reketLevi.height) &&
+                    (lopta.x - lopta.radius < reketLevi.x + reketLevi.width)
+                ) {
+                    lopta.dx = -lopta.dx;
+                }
+
+                else if( 
+                    (lopta.y - lopta.radius > reketDesni.y) && 
+                    (lopta.y + lopta.radius < reketDesni.y + reketDesni.height) &&
+                    (lopta.x + lopta.radius > reketDesni.x)
+                ) {
+                    lopta.dx = -lopta.dx;
+                }
+
+                if(lopta.x - lopta.radius < 0)
+                {
+                    pointsDesni++;
+                    lopta.x = canvas.width/2;
+                    lopta.y = canvas.height/2;
+                    clearInterval(playInterval);
+                    cnt = 0;
+                    pauseInterval = setInterval(pause, 1000);
+                }
+
+                else if(lopta.x + lopta.radius > canvas.width)
+                {
+                    pointsLevi++;
+                    lopta.x = canvas.width/2;
+                    lopta.y = canvas.height/2;
+                    clearInterval(playInterval);
+                    cnt = 0;
+                    pauseInterval = setInterval(pause, 1000);
+                }
+
+                if(ballDirection == 0)
+                    lopta.x -= lopta.dx;
+                else
+                    lopta.x += lopta.dx;
+
+                lopta.y += lopta.dy;
+            }
+
+            function pause() {
+                context.clearRect(canvas.width/2, canvas.height/2 - 60, 60, 60);
+                let sek = 3 - cnt;
+                context.font = "60px Arial";
+                context.fillText((sek).toString(), canvas.width/2, canvas.height/2);
+                cnt++;
+
+                if(cnt == 3) {
+                    clearInterval(pauseInterval);
+                    playInterval = setInterval(play, 1000/60);
+                }
+            }
+
+            function play() {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                draw();
+                moveBall();
+
+                if(downPressed) {
+                    reketDesni.y += 15;
+                    if(reketDesni.y + reketDesni.height > canvas.height)
+                        reketDesni.y = canvas.height - reketDesni.height;
+                }
+
+                if(upPressed) {
+                    reketDesni.y -= 15;
+                    if(reketDesni.y < 0)
+                        reketDesni.y = 0;
+                }
+
+                if(wPressed) {
+                    reketLevi.y -= 15;
+                    if(reketLevi.y < 0)
+                        reketLevi.y = 0;
+                }
+
+                if(sPressed) {
+                    reketLevi.y += 15;
+                    if(reketLevi.y + reketLevi.height > canvas.height)
+                        reketLevi.y = canvas.height - reketLevi.height;
+                }
+            }
+
+            var playInterval = setInterval(play, 1000/60);
+
+        </script>
+    </head>
+    <body>
+        
+    </body>
+</html>
